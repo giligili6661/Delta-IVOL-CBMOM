@@ -147,6 +147,32 @@ def fetch_csindex_constituent_snapshot(symbol, cache_dir=None):
     }
 
 
+class NoPennyUniverseFilter(base.UniverseFilter):
+    """UniverseFilter that skips the penny-stock (close < MIN_PRICE) filter."""
+
+    def filter_universe(self, date):
+        valid_codes = set(self.df_hfq["code"].unique())
+
+        st_codes = self.get_st_codes(date)
+        valid_codes -= st_codes
+
+        ipo_cutoff = date - pd.Timedelta(days=365)
+        new_codes = {c for c, d in self.ipo_dates.items() if d > ipo_cutoff}
+        valid_codes -= new_codes
+
+        lookback_start = date - pd.Timedelta(days=40)
+        mask = (self.df_hfq["date"] >= lookback_start) & (self.df_hfq["date"] <= date)
+        recent_data = self.df_hfq[mask]
+        trade_counts = recent_data.groupby("code")["date"].count()
+        suspended = set(trade_counts[trade_counts < 15].index)
+        missing = valid_codes - set(trade_counts.index)
+        valid_codes -= suspended
+        valid_codes -= missing
+
+        # NOTE: penny stock filter (close < MIN_PRICE) intentionally skipped
+        return list(valid_codes)
+
+
 class RestrictedUniverseFilter:
     def __init__(self, base_filter, allowed_codes, label):
         self.base_filter = base_filter
@@ -2520,7 +2546,10 @@ class AttentionPenaltyBacktraderStrategy(bt.Strategy):
                 backup_extra=self.p.backup_extra,
             )
 
-        self.filter = self.variant_engine.filter
+        # Replace default UniverseFilter with NoPennyUniverseFilter (skip close < 2 filter)
+        no_penny_filter = NoPennyUniverseFilter(self.loader.df_hfq, self.loader.df_raw)
+        self.variant_engine.filter = no_penny_filter
+        self.filter = no_penny_filter
         self.factor_engine = self.variant_engine.factor_engine
         self.trigger_engine = self.variant_engine.trigger_engine
         self.variant_name = self.variant_engine.variant_name
