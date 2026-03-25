@@ -1,0 +1,35 @@
+# Runtime dependencies for:
+#   backtest_backtrader_old_main_attention_penalty012.py
+#
+# Tested in the local workspace with:
+#   Python 3.13.11
+#
+# This file lists direct third-party runtime dependencies only.
+# Project-local modules are imported from the repository itself and are
+# therefore not included here:
+#   - backtest_event_driven_old_main.py
+#   - csi_size_universe.py
+#   - backtest_event_driven_old_main_attention_penalty012.py
+#   - backtest_event_driven_old_main_attention_variants.py
+#   - intraday_behavior_factor_ic_validation.py
+#
+# Standard-library modules used by the script, such as argparse, json,
+# os, time, bisect, collections, concurrent.futures, glob, warnings,
+# datetime, and pathlib, do not need to be installed with pip.
+
+# Core numeric and tabular processing
+numpy==2.4.0
+pandas==2.3.3
+
+# Plotting and figure export
+matplotlib==3.10.8
+
+# Backtesting engine
+backtrader==1.9.78.123
+
+# Market and index constituent data access
+# Required because the target script imports akshare at module load time.
+akshare==1.18.3
+
+# Progress display used by dependent local modules
+tqdm==4.67.1
